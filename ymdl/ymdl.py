@@ -10,16 +10,18 @@ def main():
     output_name = args.output_name
     audio_format = args.format
     verbose = args.verbose
+    quiet = args.quiet
 
     # execute the following programs
-    youtube_dl(args.url, verbose)
-    vlc(output_name, audio_format, verbose)
+    youtube_dl(args.url, verbose, quiet)
+    vlc(output_name, audio_format, verbose, quiet)
 
     # remove the temporary video file
     os.remove(TEMP_VIDEO_NAME)
 
-    print('[Audio Extraction Complete]')
-    print('[Created: {}.{}]'.format(output_name, audio_format))
+    if not quiet:
+        print('[Audio Extraction Complete]')
+        print('[Created: {}.{}]'.format(output_name, audio_format))
 
     FNULL.close()
 
@@ -31,7 +33,8 @@ def parse_arguments():
     OUTPUT_NAME_HELP = 'desired output name without extension'
     URL_HELP = 'URL of the video to be converted'
     FORMAT_HELP = 'desired audio output format e.g. flac, mp3, aac'
-    VERBOSE_HELP = 'show output from youtube-dl and VLC'
+    VERBOSE_HELP = 'show terminal output from youtube-dl and VLC'
+    QUIET_HELP = 'reduce terminal output'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('output_name', help = OUTPUT_NAME_HELP)
@@ -40,24 +43,27 @@ def parse_arguments():
                         help = FORMAT_HELP)
     parser.add_argument('-v', '--verbose', action = 'store_true',
                         help = VERBOSE_HELP)
+    parser.add_argument('-q', '--quiet', action = 'store_true',
+                        help = QUIET_HELP)
 
     return parser.parse_args()
 
-def youtube_dl(url, verbose):
-    print('[Fetching Video]')
+def youtube_dl(url, verbose, quiet):
+    if not quiet:
+        print('[Fetching Video]')
 
     youtube_dl_args = ['youtube-dl', '-o', TEMP_VIDEO_NAME, url]
     call(youtube_dl_args, stdout = None if verbose else FNULL)
 
-def vlc(output_name, audio_format, verbose):
-    print('[Extracting Audio]')
+def vlc(output_name, audio_format, verbose, quiet):
+    if not quiet:
+        print('[Extracting Audio]')
 
     vlc_args = [
         'vlc', '-I', 'dummy', '--no-sout-video', '--sout-audio', '--sout',
         '#transcode{{acodec={0}}}:std{{access=file,mux=raw,dst=./{1}.{0}}}'
         .format(audio_format, output_name), TEMP_VIDEO_NAME, 'vlc://quit'
     ]
-
     call(vlc_args, stdout = None if verbose else FNULL,
          stderr = None if verbose else FNULL)
 
